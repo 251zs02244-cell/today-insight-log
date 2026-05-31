@@ -20,6 +20,25 @@ const insights = [
     }
 ];
 
+const crypto = require('node:crypto');
+
+const csrfTokens = new Set();
+
+function createCsrfToken() {
+    const token = crypto.randomBytes(32).toString('hex');
+    csrfTokens.add(token);
+    return token;
+}
+
+function verifyCsrfToken(token) {
+    if (!token || !csrfTokens.has(token)) {
+        return false;
+    }
+
+    csrfTokens.delete(token);
+    return true;
+}
+
 const server = http.createServer((req, res) => {
     const now = new Date();
     console.info(`[${now}] ${req.method} ${req.url}`);
@@ -42,7 +61,8 @@ const server = http.createServer((req, res) => {
         res.write(
             pug.renderFile('./views/new-insight.pug', {
                 title: '新しい気付きを投稿',
-                categories: ['学習', '仕事', '読書', '制作', '生活', 'その他']
+                categories: ['学習', '仕事', '読書', '制作', '生活', 'その他'],
+                csrfToken: createCsrfToken()
             })
         );
         res.end();
@@ -58,6 +78,15 @@ const server = http.createServer((req, res) => {
             })
             .on('end', () => {
                 const params = new URLSearchParams(rawData);
+
+                if (!verifyCsrfToken(params.get('csrfToken'))) {
+                    res.writeHead(403, {
+                        'Content-Type': 'text/html; charset=utf-8'
+                    });
+                    res.write('<h1>403 Forbidden</h1><p>CSRFトークンが不正です。</p>');
+                    res.end();
+                    return;
+                }
 
                 const title = params.get('title');
                 const category = params.get('category');
@@ -110,7 +139,14 @@ const server = http.createServer((req, res) => {
             pug.renderFile('./views/edit-insight.pug', {
                 title: '気付きを編集',
                 insight,
-                categories: ['学習', '仕事', '読書', '制作', '生活', 'その他']
+                categories: ['学習', '仕事', '読書', '制作', '生活', 'その他'],
+                csrfToken: createCsrfToken()
+            })
+        );res.write(
+            pug.renderFile('./views/insight-detail.pug', {
+                title: insight.title,
+                insight,
+                csrfToken: createCsrfToken()
             })
         );
         res.end();
@@ -141,6 +177,15 @@ const server = http.createServer((req, res) => {
             .on('end', () => {
                 const params = new URLSearchParams(rawData);
 
+                if (!verifyCsrfToken(params.get('csrfToken'))) {
+                    res.writeHead(403, {
+                        'Content-Type': 'text/html; charset=utf-8'
+                    });
+                    res.write('<h1>403 Forbidden</h1><p>CSRFトークンが不正です。</p>');
+                    res.end();
+                    return;
+                }
+
                 insight.title = params.get('title');
                 insight.category = params.get('category');
                 insight.body = params.get('body');
@@ -170,12 +215,32 @@ const server = http.createServer((req, res) => {
             return;
         }
 
-        insights.splice(index, 1);
+        let rawData = '';
 
-        res.writeHead(303, {
-            Location: '/insights'
-        });
-        res.end();
+        req
+            .on('data', chunk => {
+                rawData += chunk;
+            })
+            .on('end', () => {
+                const params = new URLSearchParams(rawData);
+
+                if (!verifyCsrfToken(params.get('csrfToken'))) {
+                    res.writeHead(403, {
+                        'Content-Type': 'text/html; charset=utf-8'
+                    });
+                    res.write('<h1>403 Forbidden</h1><p>CSRFトークンが不正です。</p>');
+                    res.end();
+                    return;
+                }
+
+                insights.splice(index, 1);
+
+                res.writeHead(303, {
+                    Location: '/insights'
+                });
+                res.end();
+            });
+
         return;
     }
 
@@ -197,7 +262,8 @@ const server = http.createServer((req, res) => {
         res.write(
             pug.renderFile('./views/insight-detail.pug', {
                 title: insight.title,
-                insight
+                insight,
+                csrfToken: createCsrfToken()
             })
         );
         res.end();

@@ -15,6 +15,7 @@ html(lang="ja")
                 a.btn.btn-outline-secondary(href=`/insights/${insight.id}`) 詳細へ戻る
 
             form(method="post" action=`/insights/${insight.id}/update`)
+                input(type="hidden" name="csrfToken" value=csrfToken)
                 .mb-3
                     label.form-label(for="title") タイトル
                     input.form-control(
