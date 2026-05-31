@@ -1,26 +1,18 @@
 'use strict';
 
+require('dotenv/config');
+
 const http = require('node:http');
 const pug = require('pug');
-
-const insights = [
-    {
-        id: 1,
-        title: 'HTTPメソッドの役割',
-        category: '学習',
-        body: 'GETは取得、POSTは投稿という役割で考えると理解しやすかった。',
-        createdAt: new Date()
-    },
-    {
-        id: 2,
-        title: '小さく作る大切さ',
-        category: '制作',
-        body: '最初から全部作らず、まずトップページだけ表示する方が安全だと分かった。',
-        createdAt: new Date()
-    }
-];
-
 const crypto = require('node:crypto');
+const { PrismaClient } = require('@prisma/client');
+const { PrismaPg } = require('@prisma/adapter-pg');
+
+const adapter = new PrismaPg({
+    connectionString: process.env.DATABASE_URL
+});
+
+const prisma = new PrismaClient({ adapter });
 
 const csrfTokens = new Set();
 
@@ -108,19 +100,19 @@ function requireAdmin(req, res) {
     return currentUser;
 }
 
-const server = http.createServer((req, res) => {
+const server = http.createServer(async (req, res) => {
     const now = new Date();
     console.info(`[${now}] ${req.method} ${req.url}`);
-
-    res.writeHead(200, {
-        'Content-Type': 'text/html; charset=utf-8'
-    });
 
     if (req.method === 'GET' && req.url === '/') {
         const currentUser = requireLogin(req, res);
         if (!currentUser) {
             return;
         }
+
+        res.writeHead(200, {
+            'Content-Type': 'text/html; charset=utf-8'
+        });
 
         res.write(
             pug.renderFile('./views/index.pug', {
@@ -160,7 +152,7 @@ const server = http.createServer((req, res) => {
             .on('data', chunk => {
                 rawData += chunk;
             })
-            .on('end', () => {
+            .on('end', async () => {
                 const params = new URLSearchParams(rawData);
 
                 if (!verifyCsrfToken(params.get('csrfToken'))) {
@@ -176,12 +168,12 @@ const server = http.createServer((req, res) => {
                 const category = params.get('category');
                 const body = params.get('body');
 
-                insights.push({
-                    id: insights.length + 1,
-                    title,
-                    category,
-                    body,
-                    createdAt: new Date()
+                await prisma.insight.create({
+                    data: {
+                        title,
+                        category,
+                        body
+                    }
                 });
 
                 res.writeHead(303, {
@@ -198,6 +190,12 @@ const server = http.createServer((req, res) => {
         if (!currentUser) {
             return;
         }
+
+        const insights = await prisma.insight.findMany({
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
 
         res.write(
             pug.renderFile('./views/insights.pug', {
