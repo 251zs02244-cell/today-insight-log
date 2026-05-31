@@ -155,6 +155,30 @@ const server = http.createServer((req, res) => {
         return;
     }
 
+    const deleteMatch = req.url.match(/^\/insights\/(\d+)\/delete$/);
+
+    if (req.method === 'POST' && deleteMatch) {
+        const id = Number(deleteMatch[1]);
+        const index = insights.findIndex(item => item.id === id);
+
+        if (index === -1) {
+            res.writeHead(404, {
+                'Content-Type': 'text/html; charset=utf-8'
+            });
+            res.write('<h1>404 Not Found</h1>');
+            res.end();
+            return;
+        }
+
+        insights.splice(index, 1);
+
+        res.writeHead(303, {
+            Location: '/insights'
+        });
+        res.end();
+        return;
+    }
+
     const detailMatch = req.url.match(/^\/insights\/(\d+)$/);
 
     if (req.method === 'GET' && detailMatch) {
