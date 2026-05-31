@@ -27,5 +27,6 @@ html(lang="ja")
                                     .badge.text-bg-secondary.mb-2= insight.category
                                     h2.h5.card-title= insight.title
                                     p.card-text= insight.body
+                                    a.btn.btn-sm.btn-outline-primary(href=`/insights/${insight.id}`) 詳細を見る
                                     p.card-text
                                         small.text-body-secondary= insight.createdAt.toLocaleString('ja-JP')

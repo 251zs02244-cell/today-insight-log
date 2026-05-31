@@ -91,6 +91,31 @@ const server = http.createServer((req, res) => {
         return;
     }
 
+    const detailMatch = req.url.match(/^\/insights\/(\d+)$/);
+
+    if (req.method === 'GET' && detailMatch) {
+        const id = Number(detailMatch[1]);
+        const insight = insights.find(item => item.id === id);
+
+        if (!insight) {
+            res.writeHead(404, {
+                'Content-Type': 'text/html; charset=utf-8'
+            });
+            res.write('<h1>404 Not Found</h1>');
+            res.end();
+            return;
+        }
+
+        res.write(
+            pug.renderFile('./views/insight-detail.pug', {
+                title: insight.title,
+                insight
+            })
+        );
+        res.end();
+        return;
+    }
+
     res.writeHead(404, {
         'Content-Type': 'text/html; charset=utf-8'
     });
