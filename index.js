@@ -39,6 +39,75 @@ function verifyCsrfToken(token) {
     return true;
 }
 
+const users = {
+    admin: {
+        password: 'admin-password',
+        role: 'admin'
+    },
+    teacher: {
+        password: 'teacher-password',
+        role: 'teacher'
+    }
+};
+
+function getCurrentUser(req) {
+    const authorization = req.headers.authorization;
+
+    if (!authorization || !authorization.startsWith('Basic ')) {
+        return null;
+    }
+
+    const base64Credentials = authorization.replace('Basic ', '');
+    const credentials = Buffer.from(base64Credentials, 'base64').toString('utf8');
+    const [username, password] = credentials.split(':');
+
+    const user = users[username];
+
+    if (!user || user.password !== password) {
+        return null;
+    }
+
+    return {
+        username,
+        role: user.role
+    };
+}
+
+function requireLogin(req, res) {
+    const currentUser = getCurrentUser(req);
+
+    if (!currentUser) {
+        res.writeHead(401, {
+            'Content-Type': 'text/html; charset=utf-8',
+            'WWW-Authenticate': 'Basic realm="Today Insight Log"'
+        });
+        res.write('<h1>401 Unauthorized</h1><p>ログインが必要です。</p>');
+        res.end();
+        return null;
+    }
+
+    return currentUser;
+}
+
+function requireAdmin(req, res) {
+    const currentUser = requireLogin(req, res);
+
+    if (!currentUser) {
+        return null;
+    }
+
+    if (currentUser.role !== 'admin') {
+        res.writeHead(403, {
+            'Content-Type': 'text/html; charset=utf-8'
+        });
+        res.write('<h1>403 Forbidden</h1><p>この操作を行う権限がありません。</p>');
+        res.end();
+        return null;
+    }
+
+    return currentUser;
+}
+
 const server = http.createServer((req, res) => {
     const now = new Date();
     console.info(`[${now}] ${req.method} ${req.url}`);
@@ -48,6 +117,11 @@ const server = http.createServer((req, res) => {
     });
 
     if (req.method === 'GET' && req.url === '/') {
+        const currentUser = requireLogin(req, res);
+        if (!currentUser) {
+            return;
+        }
+
         res.write(
             pug.renderFile('./views/index.pug', {
                 title: '今日の気付きログ'
@@ -58,6 +132,11 @@ const server = http.createServer((req, res) => {
     }
 
     if (req.method === 'GET' && req.url === '/insights/new') {
+        const currentUser = requireAdmin(req, res);
+        if (!currentUser) {
+            return;
+        }
+
         res.write(
             pug.renderFile('./views/new-insight.pug', {
                 title: '新しい気付きを投稿',
@@ -70,6 +149,11 @@ const server = http.createServer((req, res) => {
     }
 
     if (req.method === 'POST' && req.url === '/insights') {
+        const currentUser = requireAdmin(req, res);
+        if (!currentUser) {
+            return;
+        }
+
         let rawData = '';
 
         req
@@ -110,10 +194,16 @@ const server = http.createServer((req, res) => {
     }
 
     if (req.method === 'GET' && req.url === '/insights') {
+        const currentUser = requireLogin(req, res);
+        if (!currentUser) {
+            return;
+        }
+
         res.write(
             pug.renderFile('./views/insights.pug', {
                 title: '気付き一覧',
-                insights
+                insights,
+                currentUser
             })
         );
         res.end();
@@ -123,6 +213,11 @@ const server = http.createServer((req, res) => {
     const editMatch = req.url.match(/^\/insights\/(\d+)\/edit$/);
 
     if (req.method === 'GET' && editMatch) {
+        const currentUser = requireAdmin(req, res);
+        if (!currentUser) {
+            return;
+        }
+
         const id = Number(editMatch[1]);
         const insight = insights.find(item => item.id === id);
 
@@ -156,6 +251,11 @@ const server = http.createServer((req, res) => {
     const updateMatch = req.url.match(/^\/insights\/(\d+)\/update$/);
 
     if (req.method === 'POST' && updateMatch) {
+        const currentUser = requireAdmin(req, res);
+        if (!currentUser) {
+            return;
+        }
+
         const id = Number(updateMatch[1]);
         const insight = insights.find(item => item.id === id);
 
@@ -203,6 +303,11 @@ const server = http.createServer((req, res) => {
     const deleteMatch = req.url.match(/^\/insights\/(\d+)\/delete$/);
 
     if (req.method === 'POST' && deleteMatch) {
+        const currentUser = requireAdmin(req, res);
+        if (!currentUser) {
+            return;
+        }
+
         const id = Number(deleteMatch[1]);
         const index = insights.findIndex(item => item.id === id);
 
@@ -247,6 +352,11 @@ const server = http.createServer((req, res) => {
     const detailMatch = req.url.match(/^\/insights\/(\d+)$/);
 
     if (req.method === 'GET' && detailMatch) {
+        const currentUser = requireLogin(req, res);
+        if (!currentUser) {
+            return;
+        }
+
         const id = Number(detailMatch[1]);
         const insight = insights.find(item => item.id === id);
 
@@ -263,7 +373,8 @@ const server = http.createServer((req, res) => {
             pug.renderFile('./views/insight-detail.pug', {
                 title: insight.title,
                 insight,
-                csrfToken: createCsrfToken()
+                csrfToken: createCsrfToken(),
+                currentUser
             })
         );
         res.end();

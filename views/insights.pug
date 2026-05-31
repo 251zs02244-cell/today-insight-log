@@ -13,7 +13,8 @@ html(lang="ja")
             .d-flex.justify-content-between.align-items-center.mb-4
                 h1.mb-0 気付き一覧
                 div
-                    a.btn.btn-primary.me-2(href="/insights/new") 新しい気付きを投稿
+                    if currentUser.role === 'admin'
+                        a.btn.btn-primary.me-2(href="/insights/new") 新しい気付きを投稿
                     a.btn.btn-outline-secondary(href="/") トップへ戻る
 
             if insights.length === 0

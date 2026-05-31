@@ -23,8 +23,9 @@ html(lang="ja")
                     hr
                     p.card-text(style="white-space: pre-wrap;")= insight.body
 
-                    .mt-4.d-flex.gap-2
-                        a.btn.btn-primary(href=`/insights/${insight.id}/edit`) 編集する
-                        form(method="post" action=`/insights/${insight.id}/delete`)
-                            input(type="hidden" name="csrfToken" value=csrfToken)
-                            button.btn.btn-danger(type="submit") 削除する
+                    if currentUser.role === 'admin'
+                        .mt-4.d-flex.gap-2
+                            a.btn.btn-primary(href=`/insights/${insight.id}/edit`) 編集する
+                            form(method="post" action=`/insights/${insight.id}/delete`)
+                                input(type="hidden" name="csrfToken" value=csrfToken)
+                                button.btn.btn-danger(type="submit") 削除する
