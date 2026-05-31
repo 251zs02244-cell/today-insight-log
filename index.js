@@ -217,7 +217,11 @@ const server = http.createServer(async (req, res) => {
         }
 
         const id = Number(editMatch[1]);
-        const insight = insights.find(item => item.id === id);
+        const insight = await prisma.insight.findUnique({
+            where: {
+                id
+            }
+        });
 
         if (!insight) {
             res.writeHead(404, {
@@ -255,7 +259,11 @@ const server = http.createServer(async (req, res) => {
         }
 
         const id = Number(updateMatch[1]);
-        const insight = insights.find(item => item.id === id);
+        const insight = await prisma.insight.findUnique({
+            where: {
+                id
+            }
+        });
 
         if (!insight) {
             res.writeHead(404, {
@@ -307,16 +315,6 @@ const server = http.createServer(async (req, res) => {
         }
 
         const id = Number(deleteMatch[1]);
-        const index = insights.findIndex(item => item.id === id);
-
-        if (index === -1) {
-            res.writeHead(404, {
-                'Content-Type': 'text/html; charset=utf-8'
-            });
-            res.write('<h1>404 Not Found</h1>');
-            res.end();
-            return;
-        }
 
         let rawData = '';
 
@@ -324,7 +322,7 @@ const server = http.createServer(async (req, res) => {
             .on('data', chunk => {
                 rawData += chunk;
             })
-            .on('end', () => {
+            .on('end', async () => {
                 const params = new URLSearchParams(rawData);
 
                 if (!verifyCsrfToken(params.get('csrfToken'))) {
@@ -336,12 +334,24 @@ const server = http.createServer(async (req, res) => {
                     return;
                 }
 
-                insights.splice(index, 1);
+                try {
+                    await prisma.insight.delete({
+                        where: {
+                            id
+                        }
+                    });
 
-                res.writeHead(303, {
-                    Location: '/insights'
-                });
-                res.end();
+                    res.writeHead(303, {
+                        Location: '/insights'
+                    });
+                    res.end();
+                } catch (e) {
+                    res.writeHead(404, {
+                        'Content-Type': 'text/html; charset=utf-8'
+                    });
+                    res.write('<h1>404 Not Found</h1>');
+                    res.end();
+                }
             });
 
         return;
@@ -356,7 +366,11 @@ const server = http.createServer(async (req, res) => {
         }
 
         const id = Number(detailMatch[1]);
-        const insight = insights.find(item => item.id === id);
+        const insight = await prisma.insight.findUnique({
+            where: {
+                id
+            }
+        });
 
         if (!insight) {
             res.writeHead(404, {
