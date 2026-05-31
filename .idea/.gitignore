@@ -1,8 +1,28 @@
 # デフォルトの無視対象ファイル
 /shelf/
 /workspace.xml
+
 # エディターベースの HTTP クライアントリクエスト
 /httpRequests/
+
 # Datasource local storage ignored files
 /dataSources/
 /dataSources.local.xml
+
+# Node.js
+node_modules/
+
+# 環境変数
+.env
+
+# npm / yarn logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# macOS
+.DS_Store
+
+# Prisma
+prisma/dev.db
+prisma/dev.db-journal
