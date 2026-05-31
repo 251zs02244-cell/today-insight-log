@@ -38,6 +38,17 @@ const server = http.createServer((req, res) => {
         return;
     }
 
+    if (req.method === 'GET' && req.url === '/insights/new') {
+        res.write(
+            pug.renderFile('./views/new-insight.pug', {
+                title: '新しい気付きを投稿',
+                categories: ['学習', '仕事', '読書', '制作', '生活', 'その他']
+            })
+        );
+        res.end();
+        return;
+    }
+
     if (req.method === 'GET' && req.url === '/insights') {
         res.write(
             pug.renderFile('./views/insights.pug', {

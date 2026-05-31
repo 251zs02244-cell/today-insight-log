@@ -12,7 +12,9 @@ html(lang="ja")
         main.container.py-5
             .d-flex.justify-content-between.align-items-center.mb-4
                 h1.mb-0 気付き一覧
-                a.btn.btn-outline-primary(href="/") トップへ戻る
+                div
+                    a.btn.btn-primary.me-2(href="/insights/new") 新しい気付きを投稿
+                    a.btn.btn-outline-secondary(href="/") トップへ戻る
 
             if insights.length === 0
                 .alert.alert-secondary まだ気付きは投稿されていません。
