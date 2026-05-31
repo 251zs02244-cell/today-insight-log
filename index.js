@@ -49,6 +49,37 @@ const server = http.createServer((req, res) => {
         return;
     }
 
+    if (req.method === 'POST' && req.url === '/insights') {
+        let rawData = '';
+
+        req
+            .on('data', chunk => {
+                rawData += chunk;
+            })
+            .on('end', () => {
+                const params = new URLSearchParams(rawData);
+
+                const title = params.get('title');
+                const category = params.get('category');
+                const body = params.get('body');
+
+                insights.push({
+                    id: insights.length + 1,
+                    title,
+                    category,
+                    body,
+                    createdAt: new Date()
+                });
+
+                res.writeHead(303, {
+                    Location: '/insights'
+                });
+                res.end();
+            });
+
+        return;
+    }
+
     if (req.method === 'GET' && req.url === '/insights') {
         res.write(
             pug.renderFile('./views/insights.pug', {
