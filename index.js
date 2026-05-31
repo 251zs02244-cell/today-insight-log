@@ -31,13 +31,28 @@ function verifyCsrfToken(token) {
     return true;
 }
 
+const requiredEnvNames = [
+    'DATABASE_URL',
+    'ADMIN_USER',
+    'ADMIN_PASSWORD',
+    'TEACHER_USER',
+    'TEACHER_PASSWORD'
+];
+
+for (const envName of requiredEnvNames) {
+    if (!process.env[envName]) {
+        console.error(`${envName} is required`);
+        process.exit(1);
+    }
+}
+
 const users = {
-    admin: {
-        password: 'admin-password',
+    [process.env.ADMIN_USER]: {
+        password: process.env.ADMIN_PASSWORD,
         role: 'admin'
     },
-    teacher: {
-        password: 'teacher-password',
+    [process.env.TEACHER_USER]: {
+        password: process.env.TEACHER_PASSWORD,
         role: 'teacher'
     }
 };
