@@ -91,6 +91,70 @@ const server = http.createServer((req, res) => {
         return;
     }
 
+    const editMatch = req.url.match(/^\/insights\/(\d+)\/edit$/);
+
+    if (req.method === 'GET' && editMatch) {
+        const id = Number(editMatch[1]);
+        const insight = insights.find(item => item.id === id);
+
+        if (!insight) {
+            res.writeHead(404, {
+                'Content-Type': 'text/html; charset=utf-8'
+            });
+            res.write('<h1>404 Not Found</h1>');
+            res.end();
+            return;
+        }
+
+        res.write(
+            pug.renderFile('./views/edit-insight.pug', {
+                title: '気付きを編集',
+                insight,
+                categories: ['学習', '仕事', '読書', '制作', '生活', 'その他']
+            })
+        );
+        res.end();
+        return;
+    }
+
+    const updateMatch = req.url.match(/^\/insights\/(\d+)\/update$/);
+
+    if (req.method === 'POST' && updateMatch) {
+        const id = Number(updateMatch[1]);
+        const insight = insights.find(item => item.id === id);
+
+        if (!insight) {
+            res.writeHead(404, {
+                'Content-Type': 'text/html; charset=utf-8'
+            });
+            res.write('<h1>404 Not Found</h1>');
+            res.end();
+            return;
+        }
+
+        let rawData = '';
+
+        req
+            .on('data', chunk => {
+                rawData += chunk;
+            })
+            .on('end', () => {
+                const params = new URLSearchParams(rawData);
+
+                insight.title = params.get('title');
+                insight.category = params.get('category');
+                insight.body = params.get('body');
+                insight.updatedAt = new Date();
+
+                res.writeHead(303, {
+                    Location: `/insights/${insight.id}`
+                });
+                res.end();
+            });
+
+        return;
+    }
+
     const detailMatch = req.url.match(/^\/insights\/(\d+)$/);
 
     if (req.method === 'GET' && detailMatch) {
