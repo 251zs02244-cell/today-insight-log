@@ -4,7 +4,12 @@
   "description": "日々の学習、仕事、読書、制作、生活などで得た気付きを記録するWebアプリケーションです。",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "db:push": "prisma db push",
+    "prisma:generate": "prisma generate"
+  },
+  "engines": {
+    "node": "22.x"
   },
   "keywords": [],
   "author": "",
